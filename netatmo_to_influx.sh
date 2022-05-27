@@ -12,7 +12,6 @@ INFLUX_PORT=
 source functions
 
 ### Main
-
 JSON=`getData`
 MODULES=`echo $JSON | jq '.body.devices[].modules[]'`
 
