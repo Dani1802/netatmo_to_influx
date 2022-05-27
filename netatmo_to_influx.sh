@@ -11,10 +11,6 @@ INFLUX_PORT=
 ### Functions
 source functions
 
-### Main
-JSON=`getData`
-MODULES=`echo $JSON | jq '.body.devices[].modules[]'`
-
 #[TypeOfModule] [ModuleName] [DatabaseName]
 Base "Wohnzimmer" "Wohnzimmer"
 Base "Büro" "Büro"
