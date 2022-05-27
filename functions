@@ -86,3 +86,6 @@ function Wind {
                 guststrength value=${guststrength}
                 battery_percent value=${battery_percent}"
 }
+
+JSON=`getData`
+MODULES=`echo $JSON | jq '.body.devices[].modules[]'`
