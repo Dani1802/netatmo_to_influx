@@ -1,0 +1,88 @@
+#!/bin/bash
+
+API_URL="https://api.netatmo.com/api/getstationsdata"
+AUTH_URL="https://api.netatmo.com/oauth2/token"
+
+function getData {
+        ACCESS_TOKEN=`curl --location --request POST $AUTH_URL \
+                                --form "grant_type=password" \
+                                --form "client_id=$CLIENT_ID" \
+                                --form "client_secret=$CLIENT_SECRET" \
+                                --form "username=$USERNAME" \
+                                --form "password=$PASSWORD" \
+                        | jq -r '.access_token'`
+        curl -d access_token=$ACCESS_TOKEN $API_URL
+}
+
+function Base {
+        echo ---------------------
+        echo Module=$1
+        echo Database=$2
+        temperature=`jq -r ".body.devices[] | select(.module_name==\"$1\") | .dashboard_data.Temperature" <<< $JSON`; echo temperature: $temperature
+        humidity=`jq -r ".body.devices[] | select(.module_name==\"$1\") | .dashboard_data.Humidity" <<< $JSON`; echo humidity: $humidity
+        co2=`jq -r ".body.devices[] | select(.module_name==\"$1\") | .dashboard_data.CO2" <<< $JSON`; echo co2: $co2
+        pressure=`jq -r ".body.devices[] | select(.module_name==\"$1\") | .dashboard_data.Pressure" <<< $JSON`; echo pressure: $pressure
+        noise=`jq -r ".body.devices[] | select(.module_name==\"$1\") | .dashboard_data.Noise" <<< $JSON`; echo noise: $noise
+        curl -i -XPOST "http://${INFLUX_HOST}:${INFLUX_PORT}/write?db=${2}" --data-binary \
+                "temperature value=${temperature}
+                humidity value=${humidity}
+                co2 value=${co2}
+                pressure value=${pressure}
+                noise value=${noise}"
+}
+
+function Indoor {
+        echo ---------------------
+        echo Module=$1
+        echo Database=$2
+        temperature=`jq -r ". | select(.module_name==\"$1\") | .dashboard_data.Temperature" <<< $MODULES`; echo temperature: $temperature
+        humidity=`jq -r ". | select(.module_name==\"$1\") | .dashboard_data.Humidity" <<< $MODULES`; echo humidity: $humidity
+        co2=`jq -r ". | select(.module_name==\"$1\") | .dashboard_data.CO2" <<< $MODULES`; echo co2: $co2
+        battery_percent=`jq -r ". | select(.module_name==\"$1\") | .battery_percent" <<< $MODULES`; echo battery_percent: $battery_percent
+        curl -i -XPOST "http://${INFLUX_HOST}:${INFLUX_PORT}/write?db=${2}" --data-binary \
+                "temperature value=${temperature}
+                humidity value=${humidity}
+                co2 value=${co2}
+                battery_percent value=${battery_percent}"
+}
+
+function Outdoor {
+        echo ---------------------
+        echo Module=$1
+        echo Database=$2
+        temperature=`jq -r ". | select(.module_name==\"$1\") | .dashboard_data.Temperature" <<< $MODULES`; echo temperature: $temperature
+        humidity=`jq -r ". | select(.module_name==\"$1\") | .dashboard_data.Humidity" <<< $MODULES`; echo humidity: $humidity
+        battery_percent=`jq -r ". | select(.module_name==\"$1\") | .battery_percent" <<< $MODULES`; echo battery_percent: $battery_percent
+        curl -i -XPOST "http://${INFLUX_HOST}:${INFLUX_PORT}/write?db=${2}" --data-binary \
+                "temperature value=${temperature}
+                humidity value=${humidity}
+                battery_percent value=${battery_percent}"
+}
+
+function Rain {
+        echo ---------------------
+        echo Module=$1
+        echo Database=$2
+        rain=`jq -r ". | select(.module_name==\"$1\") | .dashboard_data.Rain" <<< $MODULES`; echo rain: $rain
+        sum_rain_1=`jq -r ". | select(.module_name==\"$1\") | .dashboard_data.sum_rain_1" <<< $MODULES`; echo sum_rain_1: $sum_rain_1
+        sum_rain_24=`jq -r ". | select(.module_name==\"$1\") | .dashboard_data.sum_rain_24" <<< $MODULES`; echo sum_rain_24: $sum_rain_24
+        battery_percent=`jq -r ". | select(.module_name==\"$1\") | .battery_percent" <<< $MODULES`; echo battery_percent: $battery_percent
+        curl -i -XPOST "http://${INFLUX_HOST}:${INFLUX_PORT}/write?db=${2}" --data-binary \
+                "rain value=${rain}
+                sum_rain_1 value=${sum_rain_1}
+                sum_rain_24 value=${sum_rain_24}
+                battery_percent value=${battery_percent}"
+}
+
+function Wind {
+        echo ---------------------
+        echo Module=$1
+        echo Database=$2
+        windstrength=`jq -r ". | select(.module_name==\"$1\") | .dashboard_data.WindStrength" <<< $MODULES`; echo windstrength: $windstrength
+        guststrength=`jq -r ". | select(.module_name==\"$1\") | .dashboard_data.GustStrength" <<< $MODULES`; echo guststrength: $guststrength
+        battery_percent=`jq -r ". | select(.module_name==\"$1\") | .battery_percent" <<< $MODULES`; echo battery_percent: $battery_percent
+        curl -i -XPOST "http://${INFLUX_HOST}:${INFLUX_PORT}/write?db=${2}" --data-binary \
+                "windstrength value=${windstrength}
+                guststrength value=${guststrength}
+                battery_percent value=${battery_percent}"
+}
